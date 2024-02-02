@@ -5,14 +5,18 @@
 #include "gamelib.h"
 
 static void genera_mappa(void);
-//static void inserisci_zona(void);
-//static void cancella_zona(void);
-static void stampa_mappa(void);
-//static void chiudi_mappa(void);
-static char* nomi_stanze(Zona_segrete* , int);
+static void inserisci_zona(unsigned int numero_zone);
+static void cancella_zona(unsigned int numero_zone);
+static void stampa_mappa(unsigned int numero_zone);
+static unsigned int chiudi_mappa(unsigned int numero_zone, unsigned int opzione);
+static char* nomi_stanze(Zona_segrete*);
+static char* tipi_porte(Zona_segrete*);
+static char* tipi_tesori(Zona_segrete*);
 
-struct Zona_segrete* pFirst;
-struct Zona_segrete* pLast;
+static struct Zona_segrete* pFirst = NULL;
+static struct Zona_segrete* pLast = NULL;
+
+static unsigned int controllo_mappa = 0;
 
 void imposta_gioco(){
     //Quanti giocaori partecipano alla partita?
@@ -137,17 +141,19 @@ void imposta_gioco(){
 
     //Creazione Mappa
     
-    int opzione;
+    unsigned int opzione;
     unsigned int numero_zone=0;
+    bool generazione_mappa = false;
     do{
-        puts("\n GameMaster imposta la mappa di gioco: \n");
+        puts("\nGameMaster imposta la mappa di gioco: \n");
+        puts("Per prima cosa genera la mappa! Poi si può procedere nel modificarla a piacimento!\n");
         puts("1) GENERA MAPPA");
         puts("2) INSERISCI ZONA");
         puts("3) CANCELLA ZONA");
         puts("4) STAMPA MAPPA");
         puts("5) CHIUDI MAPPA");
 
-            if(scanf("%d", &opzione) != 1 || opzione<1 || opzione>5){
+            if(scanf("%u", &opzione) != 1 || opzione<1 || opzione>5){
                 puts("Scelta invalida, ritenta!\n");
                 while(getchar() != '\n');
                 continue;
@@ -156,74 +162,234 @@ void imposta_gioco(){
                 switch(opzione){
                     case 1:
                         genera_mappa();
+                        generazione_mappa = true;
                         numero_zone = 15;
                         puts("Mappa creata con successo!");
                         break;
                     case 2:
-                        //inserisci_zona();
-                        numero_zone++;
+                        if(generazione_mappa){
+                            inserisci_zona(numero_zone);
+                            numero_zone++;
+                            puts("\nZona inserita con successo!");
+                        }
+                        else{
+                            puts("\nPrima di poter inserire una zona è necessario selezionare l'opzione GENERA MAPPA!");
+                        }
                         break;
                     case 3:
-                        //cancella_zona();
-                        numero_zone--;
+                        if(numero_zone == 2){
+                            generazione_mappa = false;
+                        }
+                        if(generazione_mappa){
+                            cancella_zona(numero_zone);
+                            numero_zone--;
+                            puts("\nZona cancellata con successo!");
+                        }
+                        else{
+                            puts("\nPrima di poter cancellare una zona è necessario selezionare l'opzione GENERA MAPPA!");
+                        }
                         break;
                     case 4:
-                        stampa_mappa();
+                        stampa_mappa(numero_zone);
                         break;
                     case 5:
-                        //chiudi_mappa();
+                        opzione = chiudi_mappa(numero_zone, opzione);
                         break;
                 }
+
+            while(getchar() != '\n');
+
             }
 
     }while(opzione != 5);
-
-
-
  }       
  
-
-Zona_segrete* zone[30]={ NULL };    //in  questa maniera tutti elementi dell'array sono settati inizialmente a NULL
-
  //Ad ogni chiamata di questa funzione vengono create/sovrascritte 15 zone
  void genera_mappa(void){
     puts("\nGenerazione 15 zone arbitrariamente in corso...\n");
 
     time_t h;
     srand((unsigned) time(&h));
-    int random_porta = rand()%3; //3 = numero porte
 
     for(int i=0;i<15;i++){
         Zona_segrete* nuova_zona = (Zona_segrete*) malloc(sizeof(Zona_segrete));  //Creo array di struct in memoria dinamica
-        zone[i] = nuova_zona;
-        int random_zona = rand()%10;    // 10 = numero zone 
-        nuova_zona->zona = random_zona;
+        
+        int random_zona = rand() % 10;    // 10 = numero di possibili tipi di zone 
+        nuova_zona -> zona = random_zona;     //inserisco dati nella zona in memoria dinamica
+        
+        int random_porta = rand() % 3;    //3 = numero di possibili tipi di porte
+        nuova_zona -> porta = random_porta;     //inserisco dati nella zona in memoria dinamica
+
+        int random_tesoro = rand() % 4;     //4 = numero di possibilii tipi di tesori
+        nuova_zona -> tesoro = random_tesoro;      //inserisco dati nella zona in memoria dinamica
+
+        if(nuova_zona==NULL){
+            printf("Errore: impossibile allocare memoria per la nuova zona.\n");
+        }
+
+        //Essendo una doppiamente collegata servono due puntatori: 1 per poter avanzare alla zona successiva e l'altro per indietreggiare
+        if(i==0){
+            nuova_zona->zona_precedente = NULL;
+            nuova_zona->zona_successiva = NULL;
+            pFirst = nuova_zona;    //Memorizzo l'indirizzo del primo node in pFirst
+        }
+        else{
+            nuova_zona->zona_precedente = pLast; 
+            nuova_zona->zona_successiva = NULL;
+            pLast-> zona_successiva = nuova_zona;   //Memorizzo l'indirizzo dell'ulitmo in pLast
+        }
+
+        pLast = nuova_zona;      //aggiorna il puntatore all'ulitmo nodo
+
     }
  }
 
- void inserisci_zona(void){
+ void inserisci_zona(unsigned int numero_zone){
     unsigned int posizione_zona;
-    while(1){
-        puts("In quale posizione vuoi inserire la tua zona?");
-            if(scanf("%d", &posizione_zona) && posizione_zona>=1 && posizione_zona <= numero_zone){
+    unsigned int tipo_zona;
+    
+        do{
+        puts("\nQuale tipo di zona vuoi inserire? (#1-10)\n");
+        puts("1) CORRIDOIO");
+        puts("2) SCALA");
+        puts("3) SALA BANCHETTO");
+        puts("4) MAGAZZINO");
+        puts("5) GIARDINO");
+        puts("6) POSTO GUARDIA");
+        puts("7) PRIGIONE");
+        puts("8) CUCINA");
+        puts("9) ARMERIA");
+        puts("10) TEMPIO");
 
+        if(scanf("%u", &tipo_zona)==1 && tipo_zona>=1 && tipo_zona<=10){
+            break;
+        }
+        else{
+            puts("\nScegli una opzione valida!\n");
+        }
+        }while(tipo_zona<1 || tipo_zona>10);
+
+        while(1){
+        puts("\nIn quale posizione vuoi inserire la tua zona?");
+            if(scanf("%u", &posizione_zona) == 1 && posizione_zona>=1 && posizione_zona <= numero_zone+1){
+                Zona_segrete* nuova_zona = (Zona_segrete*) malloc(sizeof(Zona_segrete));
+                nuova_zona->zona = tipo_zona -1;
+
+                    if(posizione_zona==1){      //inserzione zona nella posizione di head nella linked list
+                        nuova_zona->zona_precedente = NULL;
+                        nuova_zona->zona_successiva = pFirst;
+                        pFirst->zona_precedente = nuova_zona;
+                        pFirst = nuova_zona;
+                    }
+                    else if(posizione_zona>=2 && posizione_zona<=numero_zone){    //inserzione zona in una posizione intermedia fra due nodi
+                        Zona_segrete* pScan = pFirst;
+                        for(int i=0;i<posizione_zona-2 && pScan != NULL;i++){
+                            pScan = pScan -> zona_successiva;
+                        }
+                        nuova_zona -> zona_successiva = (pScan -> zona_successiva);
+                        (pScan -> zona_successiva) -> zona_precedente = nuova_zona;
+                        pScan -> zona_successiva = nuova_zona;
+                        nuova_zona -> zona_precedente = pScan;
+                    }
+                    else if(posizione_zona==numero_zone+1){
+                        nuova_zona->zona_precedente = pLast;
+                        nuova_zona->zona_successiva = NULL;
+                        pLast->zona_successiva = nuova_zona;
+                        pLast = nuova_zona;
+                    }
+                    else if(pFirst == NULL){
+                        puts("No Node In The List!");
+                    }
+                    else{
+                        puts("Errore nel inserire la zona!");
+                    }
             }
-    }
+             else{
+                printf("\nNumero zona digitato invalido, ritenta! Hai inserito %d zone fino ad ora.\n", numero_zone);
+                continue;
+            }
+            break;
+        }
  }
 
- void stampa_mappa(void){
+ void cancella_zona(unsigned int numero_zone){
+    unsigned int zona_eliminata;
+    while(1){
+        puts("\nIn quale posizione si trova la zona che vuoi cancellare?");
+        if(scanf("%u", &zona_eliminata) == 1 && zona_eliminata>=1 && zona_eliminata <= numero_zone){
+            if(pFirst == NULL){
+                puts("No Node In The List!");
+            }
+            else if(zona_eliminata == 1){
+                Zona_segrete* pScan = pFirst -> zona_successiva;
+                free(pFirst);
+                pFirst = pScan;
+                pFirst -> zona_precedente = NULL;
+            }
+            else if(zona_eliminata >= 2 && zona_eliminata < numero_zone){
+                Zona_segrete* pScan = pFirst;
+                Zona_segrete* temp = NULL;
+                for(int i=0; i < zona_eliminata-2 && pScan != NULL; i++){
+                    pScan = pScan -> zona_successiva;
+                }
+                temp = (pScan -> zona_successiva) -> zona_successiva;
+                free(pScan -> zona_successiva);
+                pScan -> zona_successiva = temp;
+            }
+            else if(zona_eliminata == numero_zone){
+                Zona_segrete* pScan =  pFirst;
+
+                do{
+                    pScan = pScan -> zona_successiva;
+                }while((pScan -> zona_successiva) != pLast);
+
+                free(pLast);
+                pLast = pScan;
+                pLast -> zona_successiva = NULL;
+            }
+            else{
+                puts("Scegli una zona valida da cancellare nella tua mappa attuale!");
+            }
+        break;
+        }
+    }
+}
+
+ void stampa_mappa(unsigned int numero_zone){
     puts("\nLa Mappa attualmente è: \n");
-    int contatore=0;
 
-    for(int i=0; i<15;i++){
-        char* nome_stanza = nomi_stanze(zone[i], contatore);
-        contatore++;
-        printf(" %d) %s\n", i+1, nome_stanza);
+    Zona_segrete* scanner = pFirst;
+
+    for(int i=1; i<=numero_zone;i++){
+        char* nome_stanza = nomi_stanze(scanner);
+        char* tipo_porta = tipi_porte(scanner);
+        char* tipo_tesoro = tipi_tesori(scanner);
+        printf(" %2d) %-15s \t %-20s \t %s \n\n", i, nome_stanza, tipo_porta, tipo_tesoro);
+        scanner = scanner -> zona_successiva;    //aggiorna il puntatore alla zona successiva
     }
  }
 
- char* nomi_stanze(Zona_segrete* nuova_zona, int contatore){
-    switch(nuova_zona->zona){
+ unsigned int chiudi_mappa(unsigned int numero_zone, unsigned int opzione){
+    if(numero_zone>=15){
+        puts("\nLa mappa è stata impostata correttamente!\n");
+        puts("Si può iniziare a giocare!");
+        controllo_mappa = 1;
+    }
+    else{
+        puts("\nIl gioco non è stato impostato correttamente!\n");
+        puts("Il minimo numero di zone nella mappa di gioco deve essere 15!");
+        opzione = 0; 
+    }
+
+    return opzione;
+ }
+
+ char* nomi_stanze(Zona_segrete* scanner){
+    if(scanner==NULL){
+        printf("error");
+    }
+
+    switch(scanner -> zona){
         case corridoio:
             return "corridoio";
         case scala:
@@ -245,7 +411,47 @@ Zona_segrete* zone[30]={ NULL };    //in  questa maniera tutti elementi dell'arr
         case tempio:
             return "tempio";
     }
+
     return NULL;
+
+ }
+
+ char* tipi_porte(Zona_segrete* scanner){
+    if(scanner == NULL){
+        puts("error");
+    }
+    
+    switch(scanner -> porta){
+        case nessuna_porta:
+            return "nessuna porta";
+        case porta_normale:
+            return "porta normale";
+        case porta_da_scassinare:
+            return "porta da scassinare";
+    }
+
+    return NULL;
+
+ }
+
+ char* tipi_tesori(Zona_segrete* scanner){
+    if(scanner == NULL){
+        puts("error");
+    }
+
+    switch(scanner -> tesoro){
+        case nessun_tesoro:
+            return "nessun tesoro";
+        case veleno:
+            return "veleno";
+        case guarigione:
+            return "guarigione";
+        case doppia_guarigione:
+            return "doppia_guarigione";
+    }
+
+    return NULL;
+
  }
 
     

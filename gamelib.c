@@ -198,11 +198,19 @@ void imposta_gioco(){
                 }
 
             while(getchar() != '\n');
-
+            
             }
 
     }while(opzione != 5);
- }       
+    
+ system("clear");    //pulizia schermo
+
+ }
+
+ void gioca(){
+
+  }
+
  
  //Ad ogni chiamata di questa funzione vengono create/sovrascritte 15 zone
  void genera_mappa(void){
@@ -372,7 +380,7 @@ void imposta_gioco(){
  unsigned int chiudi_mappa(unsigned int numero_zone, unsigned int opzione){
     if(numero_zone>=15){
         puts("\nLa mappa è stata impostata correttamente!\n");
-        puts("Si può iniziare a giocare!");
+        puts("Si può iniziare a giocare!\n");
         controllo_mappa = 1;
     }
     else{

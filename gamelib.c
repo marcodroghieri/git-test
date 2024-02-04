@@ -12,18 +12,21 @@ static unsigned int chiudi_mappa(unsigned int numero_zone, unsigned int opzione)
 static char* nomi_stanze(Zona_segrete*);
 static char* tipi_porte(Zona_segrete*);
 static char* tipi_tesori(Zona_segrete*);
+static int* generatore_numeri_casuali(void);
+static 
 
+Giocatore* giocatori[4]={NULL,NULL,NULL,NULL};
+unsigned short numero_giocatori;
+static unsigned int controllo_mappa = 0;
 static struct Zona_segrete* pFirst = NULL;
 static struct Zona_segrete* pLast = NULL;
 
-static unsigned int controllo_mappa = 0;
 
-void imposta_gioco(){
+void imposta_gioco(void){
     //Quanti giocaori partecipano alla partita?
-    unsigned int numero_giocatori;
     while(1){
         puts("\nQuanti giocatori parteciperanno alla partita? (#1-4)");   //ERRORE 2fjhashg
-        if(scanf("%u", &numero_giocatori) == 1 && (numero_giocatori >= 1 && numero_giocatori <= 4)){
+        if(scanf("%hu", &numero_giocatori) == 1 && (numero_giocatori >= 1 && numero_giocatori <= 4)){
             break;
         }
         else{
@@ -34,8 +37,6 @@ void imposta_gioco(){
     }
     while(getchar() != '\n');
     //Inizializzazione giocatori:
-    Giocatore* giocatori[4]={NULL,NULL,NULL,NULL};
-
     for(int i=0;i<numero_giocatori;i++){
         Giocatore* nuovo_giocatore = (Giocatore*) malloc(sizeof(Giocatore));    //Creazione array di struct in memoria dinamica
         printf("\nGiocatore %d come ti vuoi chiamare?\n",i+1);
@@ -207,10 +208,59 @@ void imposta_gioco(){
 
  }
 
- void gioca(){
+ void gioca(void){
+    if(controllo_mappa == 1){
+        for(int i=0; i<numero_giocatori;i++){ 
+           giocatori[i] -> posizione = pFirst;
+            int* turno_random = generatore_numeri_casuali();
+                int contatore = 0;
+                do{ 
+                    for(int j=0; j<numero_giocatori; j++){
+                        if(turno_random[i] == j){
+                            contatore++;
+                                if(contatore == 3){ 
+                                    printf("TURNO DI %s\n", giocatori[j] -> nome_giocatore);
+                                        
+                                        unsigned short option;
+                                        int c;
+                                        bool fine_gioco = true;
 
-  }
+                                        do{ 
+                                            puts("1) AVANZA");
+                                            puts("2) INDIETREGGIA");
+                                            puts("3) STAMPA GIOCATORE");
+                                            puts("4) STAMPA ZONA");
 
+                                            scanf("%hu", &option);
+                                            while((c = getchar()) != '\n' && c != EOF);     //pulizia buffer
+
+                                            switch(option){
+                                                case 1: 
+                                                    //avanza();
+                                                    break;
+                                                case 2:
+                                                    //indietreggia();
+                                                    break;
+                                                case 3:
+                                                    //stampa_giocatore();
+                                                    break;
+                                                case 4:
+                                                    //stampa_zona();
+                                                    break;
+                                            }
+                                        }while(fine_gioco);
+
+
+                                }   
+                        }
+                    }
+                }while(contatore < 3);
+        }
+    }
+    else{
+        puts("\n!!!La mappa non è stata impostata correttamente, ricontrolla in impostazioni!!!\n");
+    }
+ }
  
  //Ad ogni chiamata di questa funzione vengono create/sovrascritte 15 zone
  void genera_mappa(void){
@@ -460,6 +510,34 @@ void imposta_gioco(){
 
     return NULL;
 
+ }
+
+ int* generatore_numeri_casuali(void){
+    time_t h;
+    srand((unsigned) time(&h));
+    int* numeri_generati = (int*)malloc(numero_giocatori * sizeof(int));     
+
+        for(int i=0; i<numero_giocatori; i++){
+            int new_number;
+            bool flag_duplicato;
+
+            do{
+            flag_duplicato = false;
+                new_number = rand() % numero_giocatori;       //genera numero in maniera arbitraria da 0 a 3
+
+                for(int j=0; j<i; j++){
+                    if(new_number == numeri_generati[j]){
+                        flag_duplicato = true;       //se il numero è già stato generato interviene con la flag
+                        break;
+                    }
+                }
+            }while(flag_duplicato);     //continua a generare numeri casuali finchè ne ho 4 tuti diversi tra loro
+
+            numeri_generati[i] = new_number;    
+        }
+
+    printf("\n");
+    return numeri_generati;
  }
 
     

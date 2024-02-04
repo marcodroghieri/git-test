@@ -13,8 +13,9 @@ static char* nomi_stanze(Zona_segrete*);
 static char* tipi_porte(Zona_segrete*);
 static char* tipi_tesori(Zona_segrete*);
 static int* generatore_numeri_casuali(void);
-static 
+static void avanza(Giocatore*);
 
+char* nome_stanza;
 Giocatore* giocatori[4]={NULL,NULL,NULL,NULL};
 unsigned short numero_giocatori;
 static unsigned int controllo_mappa = 0;
@@ -76,24 +77,28 @@ void imposta_gioco(void){
                             giocatori[i]->dadi_difesa=2;
                             giocatori[i]->p_vita=8;
                             giocatori[i]->mente=random_barbaro;
+                            break;
                         case 2:
                             giocatori[i]->classe=1;
                             giocatori[i]->dadi_attacco=2;
                             giocatori[i]->dadi_difesa=2;
                             giocatori[i]->p_vita=7;
                             giocatori[i]->mente=random_nano;
+                            break;
                         case 3:
                             giocatori[i]->classe=2;
                             giocatori[i]->dadi_attacco=2;
                             giocatori[i]->dadi_difesa=2;
                             giocatori[i]->p_vita=6;
                             giocatori[i]->mente=random_elfo;
+                            break;
                         case 4:
                             giocatori[i]->classe=3;
                             giocatori[i]->dadi_attacco=1;
                             giocatori[i]->dadi_difesa=2;
                             giocatori[i]->p_vita=4;
                             giocatori[i]->mente=random_mago;
+                            break;
                     }   
                 contatore++;    //conteggio numero di input validi da parte dei giocaotri
                 }
@@ -209,17 +214,21 @@ void imposta_gioco(void){
  }
 
  void gioca(void){
+    int* turno_random;
     if(controllo_mappa == 1){
+        for(int i=0; i<numero_giocatori;i++){
+            giocatori[i] -> posizione = pFirst;
+        }
         for(int i=0; i<numero_giocatori;i++){ 
-           giocatori[i] -> posizione = pFirst;
             int* turno_random = generatore_numeri_casuali();
                 int contatore = 0;
                 do{ 
                     for(int j=0; j<numero_giocatori; j++){
-                        if(turno_random[i] == j){
+                        if(turno_random[j] == i){
                             contatore++;
                                 if(contatore == 3){ 
                                     printf("TURNO DI %s\n", giocatori[j] -> nome_giocatore);
+                                    Giocatore* giocatore_in_turno = giocatori[j];
                                         
                                         unsigned short option;
                                         int c;
@@ -236,7 +245,7 @@ void imposta_gioco(void){
 
                                             switch(option){
                                                 case 1: 
-                                                    //avanza();
+                                                    avanza(giocatore_in_turno);
                                                     break;
                                                 case 2:
                                                     //indietreggia();
@@ -271,7 +280,7 @@ void imposta_gioco(void){
 
     for(int i=0;i<15;i++){
         Zona_segrete* nuova_zona = (Zona_segrete*) malloc(sizeof(Zona_segrete));  //Creo array di struct in memoria dinamica
-        
+
         int random_zona = rand() % 10;    // 10 = numero di possibili tipi di zone 
         nuova_zona -> zona = random_zona;     //inserisco dati nella zona in memoria dinamica
         
@@ -442,37 +451,7 @@ void imposta_gioco(void){
     return opzione;
  }
 
- char* nomi_stanze(Zona_segrete* scanner){
-    if(scanner==NULL){
-        printf("error");
-    }
-
-    switch(scanner -> zona){
-        case corridoio:
-            return "corridoio";
-        case scala:
-            return "scala";
-        case sala_banchetto:
-            return "sala_banchetto";
-        case magazzino:
-            return "magazzino";
-        case giardino:
-            return "giardino";
-        case posto_guardia:
-            return "posto_guardia";
-        case prigione:
-            return "prigione";
-        case cucina:
-            return "cucina";
-        case armeria:
-            return "armeria";
-        case tempio:
-            return "tempio";
-    }
-
-    return NULL;
-
- }
+ 
 
  char* tipi_porte(Zona_segrete* scanner){
     if(scanner == NULL){
@@ -540,4 +519,50 @@ void imposta_gioco(void){
     return numeri_generati;
  }
 
-    
+void avanza(Giocatore* giocatore_in_turno){
+    Zona_segrete* scanner = giocatore_in_turno -> posizione; //-> zona_successiva;
+
+    if(giocatore_in_turno -> posizione -> zona_successiva != NULL){
+        giocatore_in_turno -> posizione = giocatore_in_turno -> posizione -> zona_successiva;
+        char* zona_aggiornata = nomi_stanze(scanner);
+
+        printf("\n%s è avanzato nella zona succesiva!\n", giocatore_in_turno -> nome_giocatore);
+        printf("zona attuale %s", zona_aggiornata);
+    }
+    else{
+        printf("%s sei già nella zona finale, non puoi avanzare ulteriormente!",  giocatore_in_turno -> nome_giocatore);
+        puts("Scegli un'altra mossa!");
+    }
+}
+
+char* nomi_stanze(Zona_segrete* scanner){
+    if(scanner==NULL){
+        printf("error");
+    }
+
+    switch(scanner -> zona){
+        case corridoio:
+            return "corridoio";
+        case scala:
+            return "scala";
+        case sala_banchetto:
+            return "sala_banchetto";
+        case magazzino:
+            return "magazzino";
+        case giardino:
+            return "giardino";
+        case posto_guardia:
+            return "posto_guardia";
+        case prigione:
+            return "prigione";
+        case cucina:
+            return "cucina";
+        case armeria:
+            return "armeria";
+        case tempio:
+            return "tempio";
+    }
+
+    return NULL;
+
+ }

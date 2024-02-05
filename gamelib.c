@@ -14,6 +14,10 @@ static char* tipi_porte(Zona_segrete*);
 static char* tipi_tesori(Zona_segrete*);
 static int* generatore_numeri_casuali(void);
 static void avanza(Giocatore*);
+static void indietreggia(Giocatore*);
+static void stampa_giocatore(Giocatore*);
+static void stampa_zona(Giocatore*);
+static int apri_porta(Giocatore*);
 
 char* nome_stanza;
 Giocatore* giocatori[4]={NULL,NULL,NULL,NULL};
@@ -248,13 +252,13 @@ void imposta_gioco(void){
                                                     avanza(giocatore_in_turno);
                                                     break;
                                                 case 2:
-                                                    //indietreggia();
+                                                    indietreggia(giocatore_in_turno);
                                                     break;
                                                 case 3:
-                                                    //stampa_giocatore();
+                                                    stampa_giocatore(giocatore_in_turno);
                                                     break;
                                                 case 4:
-                                                    //stampa_zona();
+                                                    stampa_zona(giocatore_in_turno);
                                                     break;
                                             }
                                         }while(fine_gioco);
@@ -520,20 +524,129 @@ void imposta_gioco(void){
  }
 
 void avanza(Giocatore* giocatore_in_turno){
-    Zona_segrete* scanner = giocatore_in_turno -> posizione; //-> zona_successiva;
+    if(giocatore_in_turno -> posizione -> zona_successiva -> porta == 1 || giocatore_in_turno -> posizione -> zona_successiva -> porta == 2 ){
+        puts("\nC'è una porta da aprire prima di poter avanzare!");
+        int avanzare = apri_porta(giocatore_in_turno);
+    }
+    
+
+    Zona_segrete* scanner = giocatore_in_turno -> posizione -> zona_successiva;
 
     if(giocatore_in_turno -> posizione -> zona_successiva != NULL){
         giocatore_in_turno -> posizione = giocatore_in_turno -> posizione -> zona_successiva;
+        
+
         char* zona_aggiornata = nomi_stanze(scanner);
 
         printf("\n%s è avanzato nella zona succesiva!\n", giocatore_in_turno -> nome_giocatore);
         printf("zona attuale %s", zona_aggiornata);
     }
     else{
-        printf("%s sei già nella zona finale, non puoi avanzare ulteriormente!",  giocatore_in_turno -> nome_giocatore);
+        printf("\n%s sei già nella zona finale, non puoi avanzare ulteriormente!\n",  giocatore_in_turno -> nome_giocatore);
         puts("Scegli un'altra mossa!");
     }
 }
+
+void indietreggia(Giocatore* giocatore_in_turno){
+    Zona_segrete* scanner = giocatore_in_turno -> posizione -> zona_precedente;
+
+    if(giocatore_in_turno -> posizione -> zona_precedente != NULL){
+        giocatore_in_turno -> posizione = giocatore_in_turno -> posizione -> zona_precedente;
+        char* zona_aggiornata = nomi_stanze(scanner);
+
+        printf("\n%s è tornato nella zona precendente!\n", giocatore_in_turno -> nome_giocatore);
+        printf("zona attuale %s", zona_aggiornata);
+    }
+    else{
+        printf("\n%s sei nella prima zona, non puoi indiettreggiare ulteriormente!\n",  giocatore_in_turno -> nome_giocatore);
+        puts("Scegli un'altra mossa!");
+    }
+
+}
+
+void stampa_giocatore(Giocatore* giocatore_in_turno){
+    Zona_segrete* scanner = giocatore_in_turno -> posizione -> zona_successiva -> zona_precedente;
+    char* zona_giocatore = nomi_stanze(scanner);
+
+    printf("\nDati del giocatore %s \n", giocatore_in_turno -> nome_giocatore);
+    if(giocatore_in_turno -> classe == 0){
+        puts("Classe giocatore: barbaro");
+    }
+    else if(giocatore_in_turno -> classe == 1){
+        puts("Classe giocatore: nano");
+    }
+    else if(giocatore_in_turno -> classe == 2){
+        puts("Classe giocatore: elfo");
+    }
+    else if(giocatore_in_turno -> classe == 3){
+        puts("Classe giocatore: mago");
+    }
+    else{
+        puts("ERRORE: nessuna classe identificata.");
+    }
+    printf("Posizione attuale del giocatore: %s\n", zona_giocatore);
+    printf("Punti vita del giocatore: %d\n", giocatore_in_turno -> p_vita);
+    printf("Dadi di attacco: %d\n", giocatore_in_turno -> dadi_attacco);
+    printf("Dadi di difesa: %d\n", giocatore_in_turno -> dadi_difesa);
+    printf("Punti mente: %d\n", giocatore_in_turno -> mente);
+    printf("Potere speciale: %d\n\n", giocatore_in_turno -> potere_speciale);
+}
+
+void stampa_zona(Giocatore* giocatore_in_turno){
+    Zona_segrete* scanner = giocatore_in_turno -> posizione -> zona_successiva -> zona_precedente;
+    char* zona_giocatore_attuale = nomi_stanze(scanner);
+
+    printf("Valori della zona in cui si trova il giocatore: %s\n", giocatore_in_turno -> nome_giocatore);
+    printf("Zona attuale: %s\n", zona_giocatore_attuale);
+
+    if((giocatore_in_turno -> posizione -> tesoro) == 1 || (giocatore_in_turno -> posizione -> tesoro) == 2 || (giocatore_in_turno -> posizione -> tesoro) == 3){
+        puts("C'è un tesoro presente in questa zona!");
+    }
+    else if((giocatore_in_turno -> posizione -> tesoro) == 0){
+        puts("Nessuno tesoro presente in questa zona!");
+    }
+   
+    if((giocatore_in_turno -> posizione -> porta) == 1 || (giocatore_in_turno -> posizione -> porta) == 2){
+        puts("C'è una porta normale o da scassinare in questa zona!\n");
+    }
+    else if((giocatore_in_turno -> posizione -> porta) == 0){
+        puts("Nessuna porta presente in questa zona!\n");
+    }
+ }
+
+ static int apri_porta(Giocatore* giocatore_in_turno){
+    time_t h;
+    srand((unsigned) time(&h));
+
+    if(giocatore_in_turno -> posizione -> porta == 2){
+        puts("La porta va scassinata!");
+        int tiro_dado = rand() % 6 + 1;
+
+            if(tiro_dado <= (giocatore_in_turno -> mente)){
+                puts("La fortuna è dalla tua parte, puoi avanzare senza ripercussioni!");
+                return 1;
+            }
+            else{
+                int possibilità = rand() % 10 + 1;
+                    if(possibilità == 1){
+                        puts("Sei tornato alla prima zona!");
+                        giocatore_in_turno -> posizione = pFirst;
+                    }
+                    else if(possibilità >= 2 && possibilità <= 5){
+                        puts("Devi combattere un abitante delle segrete!");
+                    }
+                    else if(possibilità >= 6 && possibilità <= 10){
+                        puts("Hai perso un punto vita!");
+                        giocatore_in_turno -> p_vita = giocatore_in_turno -> p_vita - 1;
+                    }
+            }
+    }
+
+    if(giocatore_in_turno -> posizione -> porta == 1){
+        puts("La porta è normale!");
+    }
+
+ }
 
 char* nomi_stanze(Zona_segrete* scanner){
     if(scanner==NULL){
@@ -566,3 +679,5 @@ char* nomi_stanze(Zona_segrete* scanner){
     return NULL;
 
  }
+
+ 

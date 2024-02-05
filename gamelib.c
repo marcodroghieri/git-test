@@ -2,6 +2,7 @@
 #include<stdlib.h>
 #include<stdbool.h>
 #include<time.h>
+#include<math.h>
 #include "gamelib.h"
 
 static void genera_mappa(void);
@@ -19,6 +20,8 @@ static void stampa_giocatore(Giocatore*);
 static void stampa_zona(Giocatore*);
 static int apri_porta(Giocatore*);
 static void prendi_tesoro(Giocatore*);
+static void combatti(Giocatore*);
+static void scappa(Giocatore*);
 
 char* nome_stanza;
 Giocatore* giocatori[4]={NULL,NULL,NULL,NULL};
@@ -537,7 +540,29 @@ void avanza(Giocatore* giocatore_in_turno){
     srand((unsigned) time(&t));
     int possibilità_abitante = rand() % 3 + 1;      //genera numeri da 1 a 3
         if(possibilità_abitante == 2){      //33% probabilità di apparire abitante delle segrete
-            puts("Devi combattere l'abitante delle segrete per poter avanzare!");
+            puts("L'abitante delle segrete è apparso!\n");
+            
+            int option = 0;
+            int c = 0;
+            do{
+                puts("1) COMBATTI");
+                puts("2) SCAPPA");
+                printf("Risposta: ");
+
+                scanf("%d", &option);
+                while((c = getchar()) != '\n' && c != EOF);     //pulizia buffer
+
+            }while(option != 1 || option != 2);
+
+            switch(option){
+                case 1:
+                    combatti(giocatore_in_turno);
+                    break;
+                case 2:
+                    scappa(giocatore_in_turno);
+                    break;
+            }
+            
         }
 
 
@@ -565,7 +590,7 @@ void indietreggia(Giocatore* giocatore_in_turno){
     srand((unsigned) time(&h));
     int possibilità_abitante = rand() % 3 + 1;  //genera numeri da 1 a 3
         if(possibilità_abitante == 2){      //33% di apparire abitante delle segrete
-            puts("Devi combattere l'abitatne delle segrete per poter indiettreggiare!");
+            puts("Devi combattere l'abitantne delle segrete per poter indiettreggiare!");
         }   
 
     if(giocatore_in_turno -> posizione -> zona_precedente != NULL){
@@ -683,6 +708,358 @@ void stampa_zona(Giocatore* giocatore_in_turno){
             giocatore_in_turno -> p_vita = giocatore_in_turno -> p_vita + 2;
         }
  }
+
+//L'abitante delle segrete ha uguali punti vita, dadi di attaco, dadi di difesa rispetto al giocatore che sta combattendo per rendere l'incontro il più bilanciato possibile
+ void combatti(Giocatore* giocatore_in_turno){
+    //inizializzazione dell'abitante che il giocatore in questione dovrà affrontare
+     Abitante* nuovo_abitante = (Abitante*) malloc(sizeof(Abitante)); 
+     nuovo_abitante -> p_vita = giocatore_in_turno -> p_vita;
+     nuovo_abitante -> dadi_attacco = giocatore_in_turno -> dadi_attacco;
+     nuovo_abitante -> dadi_difesa = giocatore_in_turno -> dadi_difesa;
+
+    time_t t;
+    srand((unsigned) time(&t));
+    int lancio_giocatore = rand() % 6 + 1;
+    int lancio_abitante = rand() % 6 + 1;
+
+        if(lancio_giocatore >= lancio_abitante){
+            puts("Inizia il giocatore!\n");
+                time_t k;
+                srand((unsigned) time(&k));
+                int contatore_teschi_giocatore = 0;     //variabili per tenere traccia di quante volte è stato lanciato un teschio,scudo
+                int contatore_teschi_abitante = 0;
+                int contatore_scudi_bianchi_giocatore = 0;
+                int contatore_scudi_neri_abitante = 0;
+
+                do{ 
+                    printf("Turno di %s\n", giocatore_in_turno -> nome_giocatore);
+                    for(int i=0; i < giocatore_in_turno -> dadi_attacco; i++){
+                        int dado_giocatore = rand() % 6 + 1;
+                        int dado_abitante = rand() % 6 + 1;
+                            if(dado_giocatore >= 1 && dado_giocatore <= 3){     // tira un numero compreso fra 1 e 3 conta come teschio 50% che accada
+                                contatore_teschi_giocatore++;
+                            }
+                            if(dado_abitante == 6){
+                                contatore_scudi_neri_abitante++;    //se l'abitante tira 6 si difende da un teschio, 1/6 prossibilità di difendersi
+                            }
+                    }
+
+                    if(contatore_teschi_giocatore > contatore_scudi_neri_abitante){
+                        printf("Hai inflitto %d danni all'abitante delle segrete", contatore_teschi_giocatore - contatore_scudi_neri_abitante);
+                        nuovo_abitante -> p_vita = (nuovo_abitante -> p_vita) - (contatore_teschi_giocatore - contatore_scudi_neri_abitante);   //aggiorno punti vita inflitti all'abitante
+                        contatore_teschi_giocatore = 0;     //reimposto i contatori a 0 prima che rinizi il turno successivo
+                        contatore_teschi_abitante = 0;
+                        contatore_scudi_bianchi_giocatore = 0;
+                        contatore_scudi_neri_abitante = 0;
+
+                    }
+                    else if(contatore_scudi_neri_abitante >= contatore_teschi_giocatore){
+                        puts("Attacco non andato a buon fine! Non sei riuscito ad infliggere danni all'abitante delle segrete");
+                        contatore_teschi_giocatore = 0;     //reimposto i contatori a 0 prima che rinizi il turno successivo
+                        contatore_teschi_abitante = 0;
+                        contatore_scudi_bianchi_giocatore = 0;
+                        contatore_scudi_neri_abitante = 0;
+                    }
+
+                    puts("Turno dell'abitante delle segrete!");
+                    for(int i=0; i < giocatore_in_turno -> dadi_difesa; i++){
+                        int dado_giocatore = rand() % 6 + 1;
+                        int dado_abitante = rand() % 6 + 1;
+                            if(dado_abitante >= 1 && dado_abitante <= 3){
+                                contatore_teschi_abitante++;
+                            }
+                            if(dado_giocatore == 5){
+                                contatore_scudi_bianchi_giocatore++;
+                            }
+                    }
+
+                    if(contatore_teschi_abitante > contatore_scudi_bianchi_giocatore){
+                        printf("L'abitante ti ha inflitto %d danni\n", contatore_teschi_abitante - contatore_scudi_bianchi_giocatore);
+                        giocatore_in_turno -> p_vita = (giocatore_in_turno -> p_vita) - (contatore_teschi_abitante - contatore_scudi_bianchi_giocatore);
+                        contatore_teschi_giocatore = 0;     //reimposto i contatori a 0 prima che rinizi il turno successivo
+                        contatore_teschi_abitante = 0;
+                        contatore_scudi_bianchi_giocatore = 0;
+                        contatore_scudi_neri_abitante = 0;
+                    }
+                    else if(contatore_scudi_bianchi_giocatore >= contatore_teschi_abitante){
+                        puts("Sei riuscito a difenderti impeccabilmente! Non perdi nessun punto vita!");
+                        contatore_teschi_giocatore = 0;     //reimposto i contatori a 0 prima che rinizi il turno successivo
+                        contatore_teschi_abitante = 0;
+                        contatore_scudi_bianchi_giocatore = 0;
+                        contatore_scudi_neri_abitante = 0;
+                    }
+                }while(giocatore_in_turno -> p_vita <= 0 || nuovo_abitante -> p_vita <= 0);
+
+
+        }
+        else{
+            puts("Inizia l'abitante delle segrete!\n");
+                time_t k;
+                srand((unsigned) time(&k));
+                int contatore_teschi_giocatore = 0;     //variabili per tenere traccia di quante volte è stato lanciato un teschio,scudo
+                int contatore_teschi_abitante = 0;
+                int contatore_scudi_bianchi_giocatore = 0;
+                int contatore_scudi_neri_abitante = 0;
+
+                printf("Turno dell'abitante delle segrete!\n");
+                do{ 
+                    for(int i=0; i < giocatore_in_turno -> dadi_difesa; i++){
+                        int dado_giocatore = rand() % 6 + 1;
+                        int dado_abitante = rand() % 6 + 1;
+                            if(dado_abitante >= 1 && dado_abitante <= 3){     // tira un numero compreso fra 1 e 3 conta come teschio 50% che accada
+                                contatore_teschi_abitante++;
+                            }
+                            if(dado_giocatore == 5){
+                                contatore_scudi_bianchi_giocatore++;    //se l'abitante tira 6 si difende da un teschio, 1/6 prossibilità di difendersi
+                            }
+                    }
+
+                    if(contatore_teschi_abitante > contatore_scudi_bianchi_giocatore){
+                        printf("L'abitante ti ha inflitto %d danni\n", contatore_teschi_abitante - contatore_scudi_bianchi_giocatore);
+                        giocatore_in_turno -> p_vita = (giocatore_in_turno -> p_vita) - (contatore_teschi_abitante - contatore_scudi_bianchi_giocatore);   //aggiorno punti vita inflitti all'abitante
+                        contatore_teschi_giocatore = 0;     //reimposto i contatori a 0 prima che rinizi il turno successivo
+                        contatore_teschi_abitante = 0;
+                        contatore_scudi_bianchi_giocatore = 0;
+                        contatore_scudi_neri_abitante = 0;
+
+                    }
+                    else if(contatore_scudi_bianchi_giocatore >= contatore_teschi_abitante){
+                        puts("Sei riuscito a difenderti impeccabilmente! Non perdi nessun punto vita!\n");
+                        contatore_teschi_giocatore = 0;     //reimposto i contatori a 0 prima che rinizi il turno successivo
+                        contatore_teschi_abitante = 0;
+                        contatore_scudi_bianchi_giocatore = 0;
+                        contatore_scudi_neri_abitante = 0;
+                    }
+
+                    printf("Turno di %s\n", giocatore_in_turno -> nome_giocatore);
+                    for(int i=0; i < giocatore_in_turno -> dadi_attacco; i++){
+                        int dado_giocatore = rand() % 6 + 1;
+                        int dado_abitante = rand() % 6 + 1;
+                            if(dado_giocatore >= 1 && dado_giocatore <= 3){
+                                contatore_teschi_giocatore++;
+                            }
+                            if(dado_abitante == 6){
+                                contatore_scudi_neri_abitante++;
+                            }
+                    }
+
+                    if(contatore_teschi_giocatore > contatore_scudi_neri_abitante){
+                        printf("Hai inflitto %d danni\n", contatore_teschi_giocatore - contatore_scudi_neri_abitante);
+                        nuovo_abitante -> p_vita = (nuovo_abitante -> p_vita) - (contatore_teschi_giocatore - contatore_scudi_neri_abitante);
+                        contatore_teschi_giocatore = 0;     //reimposto i contatori a 0 prima che rinizi il turno successivo
+                        contatore_teschi_abitante = 0;
+                        contatore_scudi_bianchi_giocatore = 0;
+                        contatore_scudi_neri_abitante = 0;
+                    }
+                    else if(contatore_scudi_neri_abitante >= contatore_teschi_giocatore){
+                        puts("Attacco non andato a buon fine! Non sei riuscito ad infliggere danni all'abitante delle segrete");
+                        contatore_teschi_giocatore = 0;     //reimposto i contatori a 0 prima che rinizi il turno successivo
+                        contatore_teschi_abitante = 0;
+                        contatore_scudi_bianchi_giocatore = 0;
+                        contatore_scudi_neri_abitante = 0;
+                    }
+                }while(giocatore_in_turno -> p_vita <= 0 || nuovo_abitante -> p_vita <= 0);
+
+        }
+
+        if(nuovo_abitante -> p_vita <= 0){
+            printf("%s è riuscito a sconfiggere l'abitante e può avanzare/indiettreggiare nella zona desiderata!\n", giocatore_in_turno ->nome_giocatore);
+            free(nuovo_abitante);
+        }
+        else if(giocatore_in_turno -> p_vita <= 0){
+            printf("%s è stato sconfitto dall'abitante!\n", giocatore_in_turno -> nome_giocatore);
+            free(giocatore_in_turno);
+            free(nuovo_abitante);
+        }
+ }
+
+ void scappa(Giocatore* giocatore_in_turno){
+    time_t h;
+    srand((unsigned) time(&h));
+    int possibilità_scappare = rand() % 6 + 1;
+        if(possibilità_scappare <= giocatore_in_turno -> mente){
+            puts("Hai schivato l'abitante, ma non avanzi!");
+        }
+        else{
+            puts("Non sei riuscito a scappare dall'abitante!");
+            puts("Ti difenderai dall'attacco con il numero di dadi dimezzati (per difetto)!");
+
+                //inizializzazione dell'abitante che il giocatore in questione dovrà affrontare
+                Abitante* nuovo_abitante = (Abitante*) malloc(sizeof(Abitante)); 
+                nuovo_abitante -> p_vita = giocatore_in_turno -> p_vita;
+                nuovo_abitante -> dadi_attacco = giocatore_in_turno -> dadi_attacco;
+                nuovo_abitante -> dadi_difesa = giocatore_in_turno -> dadi_difesa;
+            
+                time_t t;
+                srand((unsigned) time(&t));
+                int lancio_giocatore = rand() % 6 + 1;
+                int lancio_abitante = rand() % 6 + 1;
+            
+                    if(lancio_giocatore >= lancio_abitante){
+                        puts("Inizia il giocatore!\n");
+                            time_t k;
+                            srand((unsigned) time(&k));
+                            int contatore_teschi_giocatore = 0;     //variabili per tenere traccia di quante volte è stato lanciato un teschio,scudo
+                            int contatore_teschi_abitante = 0;
+                            int contatore_scudi_bianchi_giocatore = 0;
+                            int contatore_scudi_neri_abitante = 0;
+            
+                            do{ 
+                                printf("Turno di %s\n", giocatore_in_turno -> nome_giocatore);
+                                for(int i=0; i < floor(giocatore_in_turno -> dadi_attacco / 2); i++){
+                                    int dado_giocatore = rand() % 6 + 1;
+                                        if(dado_giocatore >= 1 && dado_giocatore <= 3){     // tira un numero compreso fra 1 e 3 conta come teschio 50% che accada
+                                            contatore_teschi_giocatore++;
+                                        }
+                                }
+                                for(int i=0; giocatore_in_turno -> dadi_attacco; i++){
+                                    int dado_abitante = rand() % 6 + 1;
+                                    if(dado_abitante == 6){
+                                        contatore_scudi_neri_abitante++;    //se l'abitante tira 6 si difende da un teschio, 1/6 prossibilità di difendersi con scudo
+                                    }
+                                }
+            
+                                if(contatore_teschi_giocatore > contatore_scudi_neri_abitante){
+                                    printf("Hai inflitto %d danni all'abitante delle segrete", contatore_teschi_giocatore - contatore_scudi_neri_abitante);
+                                    nuovo_abitante -> p_vita = (nuovo_abitante -> p_vita) - (contatore_teschi_giocatore - contatore_scudi_neri_abitante);   //aggiorno punti vita inflitti all'abitante
+                                    contatore_teschi_giocatore = 0;     //reimposto i contatori a 0 prima che rinizi il turno successivo
+                                    contatore_teschi_abitante = 0;
+                                    contatore_scudi_bianchi_giocatore = 0;
+                                    contatore_scudi_neri_abitante = 0;
+            
+                                }
+                                else if(contatore_scudi_neri_abitante >= contatore_teschi_giocatore){
+                                    puts("Attacco non andato a buon fine! Non sei riuscito ad infliggere danni all'abitante delle segrete");
+                                    contatore_teschi_giocatore = 0;     //reimposto i contatori a 0 prima che rinizi il turno successivo
+                                    contatore_teschi_abitante = 0;
+                                    contatore_scudi_bianchi_giocatore = 0;
+                                    contatore_scudi_neri_abitante = 0;
+                                }
+            
+                                puts("Turno dell'abitante delle segrete!");
+                                for(int i=0; i < giocatore_in_turno -> dadi_difesa; i++){
+                                    int dado_abitante = rand() % 6 + 1;
+                                        if(dado_abitante >= 1 && dado_abitante <= 3){
+                                            contatore_teschi_abitante++;
+                                        }
+                                }      
+                                for(int i=0; i < floor(giocatore_in_turno -> dadi_difesa / 2); i++){
+                                    int dado_giocatore = rand() % 6 + 1;
+                                         if(dado_giocatore == 5){
+                                            contatore_scudi_bianchi_giocatore++;
+                                        }
+                                }
+                                    
+                                
+            
+                                if(contatore_teschi_abitante > contatore_scudi_bianchi_giocatore){
+                                    printf("L'abitante ti ha inflitto %d danni\n", contatore_teschi_abitante - contatore_scudi_bianchi_giocatore);
+                                    giocatore_in_turno -> p_vita = (giocatore_in_turno -> p_vita) - (contatore_teschi_abitante - contatore_scudi_bianchi_giocatore);
+                                    contatore_teschi_giocatore = 0;     //reimposto i contatori a 0 prima che rinizi il turno successivo
+                                    contatore_teschi_abitante = 0;
+                                    contatore_scudi_bianchi_giocatore = 0;
+                                    contatore_scudi_neri_abitante = 0;
+                                }
+                                else if(contatore_scudi_bianchi_giocatore >= contatore_teschi_abitante){
+                                    puts("Sei riuscito a difenderti impeccabilmente! Non perdi nessun punto vita!");
+                                    contatore_teschi_giocatore = 0;     //reimposto i contatori a 0 prima che rinizi il turno successivo
+                                    contatore_teschi_abitante = 0;
+                                    contatore_scudi_bianchi_giocatore = 0;
+                                    contatore_scudi_neri_abitante = 0;
+                                }
+                            }while(giocatore_in_turno -> p_vita <= 0 || nuovo_abitante -> p_vita <= 0);
+            
+            
+                    }
+                    else{
+                        puts("Inizia l'abitante delle segrete!\n");
+                            time_t k;
+                            srand((unsigned) time(&k));
+                            int contatore_teschi_giocatore = 0;     //variabili per tenere traccia di quante volte è stato lanciato un teschio,scudo
+                            int contatore_teschi_abitante = 0;
+                            int contatore_scudi_bianchi_giocatore = 0;
+                            int contatore_scudi_neri_abitante = 0;
+            
+                            printf("Turno dell'abitante delle segrete!\n");
+                            do{ 
+                                for(int i=0; i < giocatore_in_turno -> dadi_difesa; i++){
+                                    int dado_abitante = rand() % 6 + 1;
+                                        if(dado_abitante >= 1 && dado_abitante <= 3){     // tira un numero compreso fra 1 e 3 conta come teschio 50% che accada
+                                            contatore_teschi_abitante++;
+                                        }
+                                       
+                                }
+                                for(int i=0; i < floor(giocatore_in_turno -> dadi_difesa / 2); i++){
+                                    int dado_giocatore = rand() % 6 + 1;
+                                     if(dado_giocatore == 5){
+                                        contatore_scudi_bianchi_giocatore++;    //se l'abitante tira 6 si difende da un teschio, 1/6 prossibilità di difendersi
+                                    }
+                                }
+            
+                                if(contatore_teschi_abitante > contatore_scudi_bianchi_giocatore){
+                                    printf("L'abitante ti ha inflitto %d danni\n", contatore_teschi_abitante - contatore_scudi_bianchi_giocatore);
+                                    giocatore_in_turno -> p_vita = (giocatore_in_turno -> p_vita) - (contatore_teschi_abitante - contatore_scudi_bianchi_giocatore);   //aggiorno punti vita inflitti all'abitante
+                                    contatore_teschi_giocatore = 0;     //reimposto i contatori a 0 prima che rinizi il turno successivo
+                                    contatore_teschi_abitante = 0;
+                                    contatore_scudi_bianchi_giocatore = 0;
+                                    contatore_scudi_neri_abitante = 0;
+            
+                                }
+                                else if(contatore_scudi_bianchi_giocatore >= contatore_teschi_abitante){
+                                    puts("Sei riuscito a difenderti impeccabilmente! Non perdi nessun punto vita!\n");
+                                    contatore_teschi_giocatore = 0;     //reimposto i contatori a 0 prima che rinizi il turno successivo
+                                    contatore_teschi_abitante = 0;
+                                    contatore_scudi_bianchi_giocatore = 0;
+                                    contatore_scudi_neri_abitante = 0;
+                                }
+            
+                                printf("Turno di %s\n", giocatore_in_turno -> nome_giocatore);
+                                for(int i=0; i < giocatore_in_turno -> dadi_attacco; i++){
+                                    int dado_abitante = rand() % 6 + 1;
+                                        if(dado_abitante == 6){
+                                            contatore_scudi_neri_abitante++;
+                                        }
+                                }
+                                for(int i=0; i < floor(giocatore_in_turno -> dadi_attacco / 2); i++){
+                                    int dado_giocatore = rand() % 6 + 1;
+                                        if(dado_giocatore >= 1 && dado_giocatore <= 3){
+                                            contatore_teschi_giocatore++;
+                                        }
+                                }
+            
+                                if(contatore_teschi_giocatore > contatore_scudi_neri_abitante){
+                                    printf("Hai inflitto %d danni\n", contatore_teschi_giocatore - contatore_scudi_neri_abitante);
+                                    nuovo_abitante -> p_vita = (nuovo_abitante -> p_vita) - (contatore_teschi_giocatore - contatore_scudi_neri_abitante);
+                                    contatore_teschi_giocatore = 0;     //reimposto i contatori a 0 prima che rinizi il turno successivo
+                                    contatore_teschi_abitante = 0;
+                                    contatore_scudi_bianchi_giocatore = 0;
+                                    contatore_scudi_neri_abitante = 0;
+                                }
+                                else if(contatore_scudi_neri_abitante >= contatore_teschi_giocatore){
+                                    puts("Attacco non andato a buon fine! Non sei riuscito ad infliggere danni all'abitante delle segrete");
+                                    contatore_teschi_giocatore = 0;     //reimposto i contatori a 0 prima che rinizi il turno successivo
+                                    contatore_teschi_abitante = 0;
+                                    contatore_scudi_bianchi_giocatore = 0;
+                                    contatore_scudi_neri_abitante = 0;
+                                }
+                            }while(giocatore_in_turno -> p_vita <= 0 || nuovo_abitante -> p_vita <= 0);
+            
+                    }
+            
+                    if(nuovo_abitante -> p_vita <= 0){
+                        printf("%s è riuscito a sconfiggere l'abitante e può avanzare/indiettreggiare nella zona desiderata!\n", giocatore_in_turno ->nome_giocatore);
+                        free(nuovo_abitante);
+                    }
+                    else if(giocatore_in_turno -> p_vita <= 0){
+                        printf("%s è stato sconfitto dall'abitante!\n", giocatore_in_turno -> nome_giocatore);
+                        free(giocatore_in_turno);
+                        free(nuovo_abitante);
+                    }
+            }
+    }
+
+    
+ 
 
 char* nomi_stanze(Zona_segrete* scanner){
     if(scanner==NULL){

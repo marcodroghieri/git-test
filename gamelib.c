@@ -805,7 +805,7 @@ void stampa_zona(Giocatore* giocatore_in_turno){
 
                     }
                     else if(contatore_scudi_neri_abitante >= contatore_teschi_giocatore){
-                        puts("Attacco non andato a buon fine! Non sei riuscito ad infliggere danni all'abitante delle segrete");
+                        puts("Attacco non andato a buon fine! Non sei riuscito ad infliggere danni all'abitante delle segrete!\n");
                         contatore_teschi_giocatore = 0;     //reimposto i contatori a 0 prima che rinizi il turno successivo
                         contatore_teschi_abitante = 0;
                         contatore_scudi_bianchi_giocatore = 0;
@@ -844,7 +844,7 @@ void stampa_zona(Giocatore* giocatore_in_turno){
 
         }
         else{
-            puts("Inizia l'abitante delle segrete!\n");
+            puts("\nInizia l'abitante delle segrete!");
                 time_t k;
                 srand((unsigned) time(&k));
                 int contatore_teschi_giocatore = 0;     //variabili per tenere traccia di quante volte è stato lanciato un teschio,scudo
@@ -866,7 +866,7 @@ void stampa_zona(Giocatore* giocatore_in_turno){
                     }
 
                     if(contatore_teschi_abitante > contatore_scudi_bianchi_giocatore){
-                        printf("L'abitante ti ha inflitto %d danni\n", contatore_teschi_abitante - contatore_scudi_bianchi_giocatore);
+                        printf("L'abitante ti ha inflitto %d danni\n\n", contatore_teschi_abitante - contatore_scudi_bianchi_giocatore);
                         giocatore_in_turno -> p_vita = (giocatore_in_turno -> p_vita) - (contatore_teschi_abitante - contatore_scudi_bianchi_giocatore);   //aggiorno punti vita inflitti all'abitante
                         contatore_teschi_giocatore = 0;     //reimposto i contatori a 0 prima che rinizi il turno successivo
                         contatore_teschi_abitante = 0;
@@ -903,12 +903,17 @@ void stampa_zona(Giocatore* giocatore_in_turno){
                         contatore_scudi_neri_abitante = 0;
                     }
                     else if(contatore_scudi_neri_abitante >= contatore_teschi_giocatore){
-                        puts("Attacco non andato a buon fine! Non sei riuscito ad infliggere danni all'abitante delle segrete");
+                        puts("Attacco non andato a buon fine!");
+                        puts("Non sei riuscito ad infliggere danni all'abitante delle segrete!");
                         contatore_teschi_giocatore = 0;     //reimposto i contatori a 0 prima che rinizi il turno successivo
                         contatore_teschi_abitante = 0;
                         contatore_scudi_bianchi_giocatore = 0;
                         contatore_scudi_neri_abitante = 0;
                     }
+
+                    printf("Punti vita giocatore: %d", giocatore_in_turno -> p_vita);
+                    printf("Punti vita abitante: %d", nuovo_abitante -> p_vita);
+
                 }while(giocatore_in_turno -> p_vita <= 0 || nuovo_abitante -> p_vita <= 0);
 
         }
@@ -936,7 +941,7 @@ void stampa_zona(Giocatore* giocatore_in_turno){
         }
         else{
             puts("\nNon sei riuscito a scappare dall'abitante!");
-            puts("Ti difenderai dall'attacco con il numero di dadi dimezzati (per difetto)!");
+            puts("Ti difenderai dall'attacco con il numero di dadi dimezzati (arrotondati per difetto)!");
 
                 //inizializzazione dell'abitante che il giocatore in questione dovrà affrontare
                 Abitante* nuovo_abitante = (Abitante*) malloc(sizeof(Abitante)); 

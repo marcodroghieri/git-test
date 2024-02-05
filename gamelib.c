@@ -22,6 +22,7 @@ static int apri_porta(Giocatore*);
 static void prendi_tesoro(Giocatore*);
 static void combatti(Giocatore*);
 static void scappa(Giocatore*);
+static void gioca_potere_speciale(Giocatore*);
 
 char* nome_stanza;
 Giocatore* giocatori[4]={NULL,NULL,NULL,NULL};
@@ -33,11 +34,11 @@ static struct Zona_segrete* pLast = NULL;
 
 void imposta_gioco(void){
     //Quanti giocatori partecipano alla partita?
-    unsigned short numero_giocatori;
+    int numero_giocatori;
     int clear;
     do{
         puts("\nQuanti giocatori parteciperanno alla partita? (#1-4)");   
-        scanf("%hu", &numero_giocatori);
+        scanf("%d", &numero_giocatori);
         while((clear = getchar()) != '\n' && clear != EOF);     //pulizia buffer
 
         if(numero_giocatori < 1 || numero_giocatori > 4){
@@ -551,12 +552,13 @@ void avanza(Giocatore* giocatore_in_turno){
             do{
                 puts("1) COMBATTI");
                 puts("2) SCAPPA");
+                puts("3) GIOCA POTERE SPECIALE");
                 printf("Risposta: ");
 
                 scanf("%d", &option);
                 while((c = getchar()) != '\n' && c != EOF);     //pulizia buffer
 
-            }while(option != 1 || option != 2);
+            }while(option != 1 || option != 2 || option != 3);
 
             switch(option){
                 case 1:
@@ -564,6 +566,9 @@ void avanza(Giocatore* giocatore_in_turno){
                     break;
                 case 2:
                     scappa(giocatore_in_turno);
+                    break;
+                case 3:
+                    gioca_potere_speciale(giocatore_in_turno);
                     break;
             }
             
@@ -594,7 +599,31 @@ void indietreggia(Giocatore* giocatore_in_turno){
     srand((unsigned) time(&h));
     int possibilità_abitante = rand() % 3 + 1;  //genera numeri da 1 a 3
         if(possibilità_abitante == 2){      //33% di apparire abitante delle segrete
-            puts("Devi combattere l'abitantne delle segrete per poter indiettreggiare!");
+            puts("Devi combattere l'abitante delle segrete per poter indiettreggiare!\n");
+
+                int option;
+                int clear;
+                do{
+                    puts("Cosa vuoi fare?");
+                    puts("1) COMBATTI");
+                    puts("2) SCAPPA");
+                    puts("3) GIOCA POTERE SPECIALE");
+
+                    scanf("%d", &option);
+                    while((clear = getchar()) != '\n' && clear != EOF);     //pulizia buffer
+
+                    switch(option){
+                        case 1:
+                            combatti(giocatore_in_turno);
+                            break;
+                        case 2:
+                            scappa(giocatore_in_turno);
+                            break;
+                        case 3:
+                            gioca_potere_speciale(giocatore_in_turno);
+                            break;
+                    }
+                }while(option != 1 || option != 2 || option != 3);
         }   
 
     if(giocatore_in_turno -> posizione -> zona_precedente != NULL){
@@ -1060,10 +1089,17 @@ void stampa_zona(Giocatore* giocatore_in_turno){
                         free(nuovo_abitante);
                     }
             }
-    }
+}
 
-    
- 
+void gioca_potere_speciale(Giocatore* giocatore_in_turno){
+    if(giocatore_in_turno -> potere_speciale >= 1){
+        puts("Hai ucciso l'abitante delle segrete! Puoi procedere!");
+        giocatore_in_turno -> potere_speciale = giocatore_in_turno -> potere_speciale - 1;
+    }
+    else{
+        puts("Non hai poteri speciali sufficienti per poter usare quest'opzione!");
+    }
+}
 
 char* nomi_stanze(Zona_segrete* scanner){
     if(scanner==NULL){

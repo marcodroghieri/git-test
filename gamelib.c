@@ -20,9 +20,9 @@ static void stampa_giocatore(Giocatore*);
 static void stampa_zona(Giocatore*);
 static int apri_porta(Giocatore*);
 static void prendi_tesoro(Giocatore*);
-static void combatti(Giocatore*);
-static void scappa(Giocatore*);
-static void gioca_potere_speciale(Giocatore*);
+static int combatti(Giocatore*);
+static int scappa(Giocatore*);
+static int gioca_potere_speciale(Giocatore*);
 
 char* nome_stanza;
 Giocatore* giocatori[4]={NULL,NULL,NULL,NULL};
@@ -34,18 +34,19 @@ static struct Zona_segrete* pLast = NULL;
 
 void imposta_gioco(void){
     //Quanti giocatori partecipano alla partita?
-    int numero_giocatori;
-    int clear;
-    do{
-        puts("\nQuanti giocatori parteciperanno alla partita? (#1-4)");   
-        scanf("%d", &numero_giocatori);
-        while((clear = getchar()) != '\n' && clear != EOF);     //pulizia buffer
+        while(1){
+             puts("\nQuanti giocatori parteciperanno alla partita? (#1-4)");   
+             if(scanf("%hu", &numero_giocatori) == 1 && (numero_giocatori >= 1 && numero_giocatori <= 4)){
+                 break;
+             }
+             else{
+                 puts("Numero inserito non valido, ritenta!");
+                 while(getchar() != '\n');   //in caso di input non valido da parte dell'utente pulisco il buffer di input per il tentativo successivo dell'utente
+                 continue;
+             }
+         }
+         while(getchar() != '\n');
 
-        if(numero_giocatori < 1 || numero_giocatori > 4){
-            puts("\nNumero inserito non valido, ritenta!");
-        }
-    }while(numero_giocatori < 1 || numero_giocatori > 4);
-    
     //Inizializzazione giocatori:
     for(int i=0;i<numero_giocatori;i++){
         Giocatore* nuovo_giocatore = (Giocatore*) malloc(sizeof(Giocatore));    //Creazione array di struct in memoria dinamica
@@ -272,6 +273,9 @@ void imposta_gioco(void){
                                                     break;
                                                 case 5: 
                                                     prendi_tesoro(giocatore_in_turno);
+                                                    break;
+                                                case 6:
+                                                    //passa(giocatore_in_turno);
                                             }
                                         }while(fine_gioco);
 
@@ -307,7 +311,7 @@ void imposta_gioco(void){
         nuova_zona -> tesoro = random_tesoro;      //inserisco dati nella zona in memoria dinamica
 
         if(nuova_zona==NULL){
-            printf("Errore: impossibile allocare memoria per la nuova zona.\n");
+            puts("Errore: impossibile allocare memoria per la nuova zona.");
         }
 
         //Essendo una doppiamente collegata servono due puntatori: 1 per poter avanzare alla zona successiva e l'altro per indietreggiare
@@ -536,6 +540,7 @@ void imposta_gioco(void){
  }
 
 void avanza(Giocatore* giocatore_in_turno){
+    int avanzare;
     if(giocatore_in_turno -> posizione -> zona_successiva -> porta == 1 || giocatore_in_turno -> posizione -> zona_successiva -> porta == 2 ){
         puts("\nC'è una porta da aprire prima di poter avanzare!");
         int avanzare = apri_porta(giocatore_in_turno);
@@ -545,7 +550,7 @@ void avanza(Giocatore* giocatore_in_turno){
     srand((unsigned) time(&t));
     int possibilità_abitante = rand() % 3 + 1;      //genera numeri da 1 a 3
         if(possibilità_abitante == 2){      //33% probabilità di apparire abitante delle segrete
-            puts("L'abitante delle segrete è apparso!\n");
+            puts("\nL'abitante delle segrete è apparso!\n");
             
             int option = 0;
             int c = 0;
@@ -553,43 +558,53 @@ void avanza(Giocatore* giocatore_in_turno){
                 puts("1) COMBATTI");
                 puts("2) SCAPPA");
                 puts("3) GIOCA POTERE SPECIALE");
-                printf("Risposta: ");
+                puts("Risposta: ");
 
                 scanf("%d", &option);
-                while((c = getchar()) != '\n' && c != EOF);     //pulizia buffer
 
-            }while(option != 1 || option != 2 || option != 3);
-
-            switch(option){
+                switch(option){
                 case 1:
-                    combatti(giocatore_in_turno);
+                    int check = combatti(giocatore_in_turno);   //controllo per vedere se il giocatore può avanzare
+                    if(check == 1){
+                        int avanzare = 1;
+                    }
                     break;
                 case 2:
-                    scappa(giocatore_in_turno);
+                    int check2 = scappa(giocatore_in_turno);     //controllo per vedere se il giocatore può avanzare
+                    if(check2 == 1){
+                        int avanzare = 1;
+                    }
                     break;
                 case 3:
-                    gioca_potere_speciale(giocatore_in_turno);
+                    int controllo_uso = gioca_potere_speciale(giocatore_in_turno);      //controlla se il giocatore in questione ha sufficienti poteri speciali da utilizzare in battaglia
+                    if(controllo_uso == 0){
+                        option = 0;     //reimposto variabile per dare la possibilità al giocatore di selezinare un'altra opzione
+                    }
+                    break;
+                default:
+                    puts("Opzione non valida, ritenta!");
+                    while((c = getchar()) != '\n' && c != EOF);     //pulizia buffer
                     break;
             }
-            
+
+            }while(option != 1 && option != 2 && option != 3);
+
+        }
+        else{
+            avanzare = 1;
         }
 
-
-    Zona_segrete* scanner = giocatore_in_turno -> posizione -> zona_successiva;
-
-    if(giocatore_in_turno -> posizione -> zona_successiva != NULL){
-        giocatore_in_turno -> posizione = giocatore_in_turno -> posizione -> zona_successiva;
-        
-
-        char* zona_aggiornata = nomi_stanze(scanner);
-
-        printf("\n%s è avanzato nella zona succesiva!\n", giocatore_in_turno -> nome_giocatore);
-        printf("zona attuale %s", zona_aggiornata);
+    if(avanzare == 1){
+         if(giocatore_in_turno -> posizione -> zona_successiva != NULL){
+            giocatore_in_turno -> posizione = giocatore_in_turno -> posizione -> zona_successiva;
+            printf("\n%s è avanzato nella zona succesiva!\n", giocatore_in_turno -> nome_giocatore);
+        }
+        else{
+            printf("\n%s sei già nella zona finale, non puoi avanzare ulteriormente!\n",  giocatore_in_turno -> nome_giocatore);
+            puts("Scegli un'altra mossa!");
+        }
     }
-    else{
-        printf("\n%s sei già nella zona finale, non puoi avanzare ulteriormente!\n",  giocatore_in_turno -> nome_giocatore);
-        puts("Scegli un'altra mossa!");
-    }
+       
 }
 
 void indietreggia(Giocatore* giocatore_in_turno){
@@ -694,7 +709,7 @@ void stampa_zona(Giocatore* giocatore_in_turno){
     time_t h;
     srand((unsigned) time(&h));
 
-    if(giocatore_in_turno -> posizione -> porta == 2){
+    if(giocatore_in_turno -> posizione -> zona_successiva -> porta == 2){
         puts("La porta va scassinata!");
         int tiro_dado = rand() % 6 + 1;
 
@@ -707,9 +722,11 @@ void stampa_zona(Giocatore* giocatore_in_turno){
                     if(possibilità == 1){
                         puts("Sei tornato alla prima zona!");
                         giocatore_in_turno -> posizione = pFirst;
+                        return 0;
                     }
                     else if(possibilità >= 2 && possibilità <= 5){
                         puts("Devi combattere un abitante delle segrete!");
+                        combatti(giocatore_in_turno);
                     }
                     else if(possibilità >= 6 && possibilità <= 10){
                         puts("Hai perso un punto vita!");
@@ -718,8 +735,9 @@ void stampa_zona(Giocatore* giocatore_in_turno){
             }
     }
 
-    if(giocatore_in_turno -> posizione -> porta == 1){
+    if(giocatore_in_turno -> posizione -> zona_successiva -> porta == 1){
         puts("La porta è normale!");
+        return 1;
     }
 
  }
@@ -743,7 +761,7 @@ void stampa_zona(Giocatore* giocatore_in_turno){
  }
 
 //L'abitante delle segrete ha uguali punti vita, dadi di attaco, dadi di difesa rispetto al giocatore che sta combattendo per rendere l'incontro il più bilanciato possibile
- void combatti(Giocatore* giocatore_in_turno){
+ int combatti(Giocatore* giocatore_in_turno){
     //inizializzazione dell'abitante che il giocatore in questione dovrà affrontare
      Abitante* nuovo_abitante = (Abitante*) malloc(sizeof(Abitante)); 
      nuovo_abitante -> p_vita = giocatore_in_turno -> p_vita;
@@ -898,23 +916,26 @@ void stampa_zona(Giocatore* giocatore_in_turno){
         if(nuovo_abitante -> p_vita <= 0){
             printf("%s è riuscito a sconfiggere l'abitante e può avanzare/indiettreggiare nella zona desiderata!\n", giocatore_in_turno ->nome_giocatore);
             free(nuovo_abitante);
+            return 1;
         }
         else if(giocatore_in_turno -> p_vita <= 0){
             printf("%s è stato sconfitto dall'abitante!\n", giocatore_in_turno -> nome_giocatore);
             free(giocatore_in_turno);
             free(nuovo_abitante);
+            return 0;
         }
  }
 
- void scappa(Giocatore* giocatore_in_turno){
+ int scappa(Giocatore* giocatore_in_turno){
     time_t h;
     srand((unsigned) time(&h));
     int possibilità_scappare = rand() % 6 + 1;
         if(possibilità_scappare <= giocatore_in_turno -> mente){
-            puts("Hai schivato l'abitante, ma non avanzi!");
+            puts("\nHai schivato l'abitante, ma non avanzi!\n");
+            return 0;
         }
         else{
-            puts("Non sei riuscito a scappare dall'abitante!");
+            puts("\nNon sei riuscito a scappare dall'abitante!");
             puts("Ti difenderai dall'attacco con il numero di dadi dimezzati (per difetto)!");
 
                 //inizializzazione dell'abitante che il giocatore in questione dovrà affrontare
@@ -962,7 +983,7 @@ void stampa_zona(Giocatore* giocatore_in_turno){
             
                                 }
                                 else if(contatore_scudi_neri_abitante >= contatore_teschi_giocatore){
-                                    puts("Attacco non andato a buon fine! Non sei riuscito ad infliggere danni all'abitante delle segrete");
+                                    puts("\nAttacco non andato a buon fine! Non sei riuscito ad infliggere danni all'abitante delle segrete");
                                     contatore_teschi_giocatore = 0;     //reimposto i contatori a 0 prima che rinizi il turno successivo
                                     contatore_teschi_abitante = 0;
                                     contatore_scudi_bianchi_giocatore = 0;
@@ -1082,22 +1103,25 @@ void stampa_zona(Giocatore* giocatore_in_turno){
                     if(nuovo_abitante -> p_vita <= 0){
                         printf("%s è riuscito a sconfiggere l'abitante e può avanzare/indiettreggiare nella zona desiderata!\n", giocatore_in_turno ->nome_giocatore);
                         free(nuovo_abitante);
+                        return 1;
                     }
                     else if(giocatore_in_turno -> p_vita <= 0){
                         printf("%s è stato sconfitto dall'abitante!\n", giocatore_in_turno -> nome_giocatore);
                         free(giocatore_in_turno);
                         free(nuovo_abitante);
+                        return 0;
                     }
             }
 }
 
-void gioca_potere_speciale(Giocatore* giocatore_in_turno){
+int gioca_potere_speciale(Giocatore* giocatore_in_turno){
     if(giocatore_in_turno -> potere_speciale >= 1){
-        puts("Hai ucciso l'abitante delle segrete! Puoi procedere!");
+        puts("\nHai ucciso l'abitante delle segrete! Puoi procedere!\n");
         giocatore_in_turno -> potere_speciale = giocatore_in_turno -> potere_speciale - 1;
     }
     else{
-        puts("Non hai poteri speciali sufficienti per poter usare quest'opzione!");
+        puts("\nNon hai poteri speciali sufficienti per poter usare quest'opzione!\n");
+        return 0;
     }
 }
 

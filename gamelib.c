@@ -32,19 +32,19 @@ static struct Zona_segrete* pLast = NULL;
 
 
 void imposta_gioco(void){
-    //Quanti giocaori partecipano alla partita?
-    while(1){
-        puts("\nQuanti giocatori parteciperanno alla partita? (#1-4)");   //ERRORE 2fjhashg
-        if(scanf("%hu", &numero_giocatori) == 1 && (numero_giocatori >= 1 && numero_giocatori <= 4)){
-            break;
+    //Quanti giocatori partecipano alla partita?
+    unsigned short numero_giocatori;
+    int clear;
+    do{
+        puts("\nQuanti giocatori parteciperanno alla partita? (#1-4)");   
+        scanf("%hu", &numero_giocatori);
+        while((clear = getchar()) != '\n' && clear != EOF);     //pulizia buffer
+
+        if(numero_giocatori < 1 || numero_giocatori > 4){
+            puts("\nNumero inserito non valido, ritenta!");
         }
-        else{
-            puts("Numero inserito non valido, ritenta!");
-            while(getchar() != '\n');   //in caso di input non valido da parte dell'utente pulisco il buffer di input per il tentativo successivo dell'utente
-            continue;
-        }
-    }
-    while(getchar() != '\n');
+    }while(numero_giocatori < 1 || numero_giocatori > 4);
+    
     //Inizializzazione giocatori:
     for(int i=0;i<numero_giocatori;i++){
         Giocatore* nuovo_giocatore = (Giocatore*) malloc(sizeof(Giocatore));    //Creazione array di struct in memoria dinamica
@@ -85,6 +85,7 @@ void imposta_gioco(void){
                             giocatori[i]->dadi_difesa=2;
                             giocatori[i]->p_vita=8;
                             giocatori[i]->mente=random_barbaro;
+                            giocatori[i]->potere_speciale=0;
                             break;
                         case 2:
                             giocatori[i]->classe=1;
@@ -92,6 +93,7 @@ void imposta_gioco(void){
                             giocatori[i]->dadi_difesa=2;
                             giocatori[i]->p_vita=7;
                             giocatori[i]->mente=random_nano;
+                            giocatori[i]->potere_speciale=1;
                             break;
                         case 3:
                             giocatori[i]->classe=2;
@@ -99,6 +101,7 @@ void imposta_gioco(void){
                             giocatori[i]->dadi_difesa=2;
                             giocatori[i]->p_vita=6;
                             giocatori[i]->mente=random_elfo;
+                            giocatori[i]->potere_speciale=1;
                             break;
                         case 4:
                             giocatori[i]->classe=3;
@@ -106,6 +109,7 @@ void imposta_gioco(void){
                             giocatori[i]->dadi_difesa=2;
                             giocatori[i]->p_vita=4;
                             giocatori[i]->mente=random_mago;
+                            giocatori[i]->potere_speciale=3;
                             break;
                     }   
                 contatore++;    //conteggio numero di input validi da parte dei giocaotri

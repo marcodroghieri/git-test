@@ -18,6 +18,7 @@ static void indietreggia(Giocatore*);
 static void stampa_giocatore(Giocatore*);
 static void stampa_zona(Giocatore*);
 static int apri_porta(Giocatore*);
+static void prendi_tesoro(Giocatore*);
 
 char* nome_stanza;
 Giocatore* giocatori[4]={NULL,NULL,NULL,NULL};
@@ -243,6 +244,7 @@ void imposta_gioco(void){
                                             puts("2) INDIETREGGIA");
                                             puts("3) STAMPA GIOCATORE");
                                             puts("4) STAMPA ZONA");
+                                            puts("5) PRENDI TESORO");
 
                                             scanf("%hu", &option);
                                             while((c = getchar()) != '\n' && c != EOF);     //pulizia buffer
@@ -260,6 +262,8 @@ void imposta_gioco(void){
                                                 case 4:
                                                     stampa_zona(giocatore_in_turno);
                                                     break;
+                                                case 5: 
+                                                    prendi_tesoro(giocatore_in_turno);
                                             }
                                         }while(fine_gioco);
 
@@ -528,7 +532,14 @@ void avanza(Giocatore* giocatore_in_turno){
         puts("\nC'è una porta da aprire prima di poter avanzare!");
         int avanzare = apri_porta(giocatore_in_turno);
     }
-    
+
+    time_t t;
+    srand((unsigned) time(&t));
+    int possibilità_abitante = rand() % 3 + 1;      //genera numeri da 1 a 3
+        if(possibilità_abitante == 2){      //33% probabilità di apparire abitante delle segrete
+            puts("Devi combattere l'abitante delle segrete per poter avanzare!");
+        }
+
 
     Zona_segrete* scanner = giocatore_in_turno -> posizione -> zona_successiva;
 
@@ -549,6 +560,13 @@ void avanza(Giocatore* giocatore_in_turno){
 
 void indietreggia(Giocatore* giocatore_in_turno){
     Zona_segrete* scanner = giocatore_in_turno -> posizione -> zona_precedente;
+
+    time_t h;
+    srand((unsigned) time(&h));
+    int possibilità_abitante = rand() % 3 + 1;  //genera numeri da 1 a 3
+        if(possibilità_abitante == 2){      //33% di apparire abitante delle segrete
+            puts("Devi combattere l'abitatne delle segrete per poter indiettreggiare!");
+        }   
 
     if(giocatore_in_turno -> posizione -> zona_precedente != NULL){
         giocatore_in_turno -> posizione = giocatore_in_turno -> posizione -> zona_precedente;
@@ -646,6 +664,24 @@ void stampa_zona(Giocatore* giocatore_in_turno){
         puts("La porta è normale!");
     }
 
+ }
+
+ void prendi_tesoro(Giocatore* giocatore_in_turno){
+        if(giocatore_in_turno -> posizione -> tesoro == 0){
+            puts("Nessuno tesoro disponibile!");
+        }
+        else if(giocatore_in_turno -> posizione -> tesoro == 1){
+            puts("Hai trovato il veleno! Perdi due punti vita!");
+            giocatore_in_turno -> p_vita = giocatore_in_turno -> p_vita - 2;
+        }
+        else if(giocatore_in_turno -> posizione -> tesoro == 2){
+            puts("Hai trovato una guarigione! Hai guadagnato un punto vita!");
+            giocatore_in_turno -> p_vita = giocatore_in_turno -> p_vita + 1;
+        }
+        else if(giocatore_in_turno -> posizione -> tesoro == 3){
+            puts("Hai trova una doppia guarigione! Hai guadagnato due punti vita!");
+            giocatore_in_turno -> p_vita = giocatore_in_turno -> p_vita + 2;
+        }
  }
 
 char* nomi_stanze(Zona_segrete* scanner){

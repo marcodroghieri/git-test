@@ -18,15 +18,21 @@ int main(void){
         while((c = getchar()) != '\n' && c != EOF);     //pulizia buffer
 
         switch(option){
-        case 1:
-            imposta_gioco();
-            break;
-        case 2:
-            //gioca();
-            break;
-        case 3:
-            //termina_gioco();
-            break;
+            case 1:
+                system("clear");
+                imposta_gioco();
+                break;
+            case 2:
+                system("clear");
+                gioca();
+                break;
+            case 3:
+                system("clear");
+                termina_gioco();
+                break;
+            default:
+                puts("\nOpzione invalida, Ritenta!\n");
+                break;
         }
     }while(option != 3);  
 }  

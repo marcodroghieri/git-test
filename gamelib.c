@@ -243,9 +243,8 @@ void imposta_gioco(void){
                         for(int i = 0; i< numero_giocatori; i++){ 
                         for(int j=0; j<numero_giocatori; j++){
                             if(turno_random[j] == i){
-                                printf("numero casuale: %d", turno_random[j]);
-                                printf("contatore %d", contatore);
-                                    if(j == turno_random[i]){      //ricontrolla in caso fosse qui l'errore
+                                    if(j == turno_random[i]){     
+                                        printf("NUMERO GIOCATORI: %d", numero_giocatori);
                                         contatore++;
                                         printf("TURNO DI %s\n", giocatori[j] -> nome_giocatore);
                                         Giocatore* giocatore_in_turno = giocatori[j];
@@ -309,10 +308,21 @@ void imposta_gioco(void){
 
                     }while(contatore == 5);
                 }
+
+                Zona_segrete* free_zona = pFirst;
+                for(int i = 0; i < numero_zone ;i++){
+                    free(free_zona);
+                    free_zona = free_zona -> zona_successiva;
+                }            
     }   
     else{   
         puts("\n!!!La mappa non è stata impostata correttamente, ricontrolla in impostazioni!!!\n");
     }
+ }
+
+ void termina_gioco(void){
+    puts("Grazie per aver giocato a Scalogna-Quest!!!\n\n");
+    puts("Logging out...\n\n");
  }
  
  //Ad ogni chiamata di questa funzione vengono create/sovrascritte 15 zone
@@ -632,7 +642,7 @@ void avanza(Giocatore* giocatore_in_turno){
         }
         else if(giocatore_in_turno -> posizione -> zona_successiva == pLast){
             printf("\n%s è arrivato nella zona finale!",  giocatore_in_turno -> nome_giocatore);
-            printf("Hai vinto la partita!\n");
+            printf(" Hai vinto la partita!\n");
             numero_giocatori = 0;
         }
     }
@@ -818,7 +828,7 @@ void stampa_zona(Giocatore* giocatore_in_turno){
             giocatore_in_turno -> p_vita = giocatore_in_turno -> p_vita - 2;
             giocatore_in_turno -> posizione -> tesoro_preso = 1;
                 if(giocatore_in_turno -> p_vita == 0 || giocatore_in_turno -> p_vita >= 200){
-                    printf("Il giocatore %s è stato ucciso!\n", giocatore_in_turno -> nome_giocatore);
+                    printf("Il giocatore %s è stato ucciso dal veleno!\n", giocatore_in_turno -> nome_giocatore);
                     free(giocatore_in_turno);
                     numero_giocatori--;
                 }
@@ -915,7 +925,7 @@ void stampa_zona(Giocatore* giocatore_in_turno){
                         contatore_scudi_bianchi_giocatore = 0;
                         contatore_scudi_neri_abitante = 0;
                     }
-                }while(giocatore_in_turno -> p_vita > 0 || nuovo_abitante -> p_vita > 0);
+                }while((giocatore_in_turno -> p_vita > 0 && giocatore_in_turno -> p_vita < 200) && (nuovo_abitante -> p_vita > 0 && nuovo_abitante -> p_vita < 200));
 
 
         }
@@ -987,16 +997,16 @@ void stampa_zona(Giocatore* giocatore_in_turno){
                         contatore_scudi_neri_abitante = 0;
                     }
 
-                }while(giocatore_in_turno -> p_vita > 0 || nuovo_abitante -> p_vita > 0);
+                }while((giocatore_in_turno -> p_vita > 0 && giocatore_in_turno -> p_vita < 200) && (nuovo_abitante -> p_vita > 0 && nuovo_abitante -> p_vita < 200));
 
         }
 
-        if(nuovo_abitante -> p_vita <= 0){
+        if(nuovo_abitante -> p_vita <= 0 || giocatore_in_turno -> p_vita >= 200){
             printf("%s è riuscito a sconfiggere l'abitante e può avanzare/indiettreggiare nella zona desiderata!\n\n", giocatore_in_turno ->nome_giocatore);
             free(nuovo_abitante);
             return 1;
         }
-        else if(giocatore_in_turno -> p_vita <= 0){
+        else if(giocatore_in_turno -> p_vita <= 0 || giocatore_in_turno -> p_vita >= 200){
             printf("%s è stato sconfitto dall'abitante!\n\n", giocatore_in_turno -> nome_giocatore);
             free(giocatore_in_turno);
             free(nuovo_abitante);
@@ -1101,7 +1111,7 @@ void stampa_zona(Giocatore* giocatore_in_turno){
                                     contatore_scudi_bianchi_giocatore = 0;
                                     contatore_scudi_neri_abitante = 0;
                                 }
-                            }while(giocatore_in_turno -> p_vita > 0 && nuovo_abitante -> p_vita > 0);
+                            }while((giocatore_in_turno -> p_vita > 0 && giocatore_in_turno -> p_vita < 200) && (nuovo_abitante -> p_vita > 0 && nuovo_abitante -> p_vita < 200));
             
             
                     }
@@ -1178,16 +1188,16 @@ void stampa_zona(Giocatore* giocatore_in_turno){
                                     contatore_scudi_neri_abitante = 0;
                                 }
 
-                            }while(giocatore_in_turno -> p_vita > 0 && nuovo_abitante -> p_vita > 0);
+                            }while((giocatore_in_turno -> p_vita > 0 && giocatore_in_turno -> p_vita < 200) && (nuovo_abitante -> p_vita > 0 && nuovo_abitante -> p_vita < 200));
             
                     }
             
-                    if(nuovo_abitante -> p_vita <= 0){
+                    if(nuovo_abitante -> p_vita <= 0 || nuovo_abitante -> p_vita >= 200){
                         printf("%s è riuscito a sconfiggere l'abitante e può avanzare/indiettreggiare nella zona desiderata!\n\n", giocatore_in_turno -> nome_giocatore);
                         free(nuovo_abitante);
                         return 1;
                     }
-                    else if(giocatore_in_turno -> p_vita <= 0){
+                    else if(giocatore_in_turno -> p_vita <= 0 || giocatore_in_turno -> p_vita >= 200){
                         printf("%s è stato sconfitto dall'abitante!\n\n", giocatore_in_turno -> nome_giocatore);
                         free(giocatore_in_turno);
                         free(nuovo_abitante);

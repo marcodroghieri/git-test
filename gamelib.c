@@ -240,8 +240,8 @@ void imposta_gioco(void){
                 int* turno_random = generatore_numeri_casuali();
                     int contatore = 0;  //variabile utilizzata per determinare quanti giocatori hanno giocato ogni turno
                     do{ 
-                        for(int i = 0; i< numero_giocatori; i++){ 
-                        for(int j=0; j<numero_giocatori; j++){
+                        for(int i = 0; i < numero_giocatori; i++){ 
+                        for(int j=0; j < numero_giocatori; j++){
                             if(turno_random[j] == i){
                                     if(j == turno_random[i]){     
                                         printf("NUMERO GIOCATORI: %d", numero_giocatori);
@@ -582,7 +582,8 @@ void avanza(Giocatore* giocatore_in_turno){
         if(giocatore_in_turno -> posizione -> zona_successiva != NULL){
             if(giocatore_in_turno -> posizione -> zona_successiva -> porta == 1 || giocatore_in_turno -> posizione -> zona_successiva -> porta == 2 ){
                 puts("\nC'è una porta da aprire prima di poter avanzare!");
-                int avanzare = apri_porta(giocatore_in_turno);
+                avanzare = apri_porta(giocatore_in_turno);
+                printf("avanzare : %d", avanzare);
             }
         }
         else if(giocatore_in_turno -> posizione -> zona_successiva = pLast){
@@ -802,6 +803,12 @@ void stampa_zona(Giocatore* giocatore_in_turno){
                     else if(possibilità >= 6 && possibilità <= 10){
                         puts("Hai perso un punto vita!");
                         giocatore_in_turno -> p_vita = giocatore_in_turno -> p_vita - 1;
+                            if(giocatore_in_turno -> p_vita == 0 || giocatore_in_turno -> p_vita >= 200){
+                                printf("Il giocatore %s è stato ucciso!\n", giocatore_in_turno -> nome_giocatore);
+                                free(giocatore_in_turno);
+                                numero_giocatori--;
+                                return 0;
+                            }
                     }
             }
     }
@@ -1197,11 +1204,12 @@ void stampa_zona(Giocatore* giocatore_in_turno){
                         free(nuovo_abitante);
                         return 1;
                     }
-                    else if(giocatore_in_turno -> p_vita <= 0 || giocatore_in_turno -> p_vita >= 200){
-                        printf("%s è stato sconfitto dall'abitante!\n\n", giocatore_in_turno -> nome_giocatore);
+                    if(giocatore_in_turno -> p_vita <= 0 || giocatore_in_turno -> p_vita >= 200){
+                        printf("\n%s è stato sconfitto dall'abitante!\n", giocatore_in_turno -> nome_giocatore);
                         free(giocatore_in_turno);
                         free(nuovo_abitante);
                         numero_giocatori--;
+                        printf("numero giocatori: %d", numero_giocatori);
                         return 0;
                     }
             }

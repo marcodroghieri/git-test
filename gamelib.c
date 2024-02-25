@@ -23,6 +23,8 @@ static void prendi_tesoro(Giocatore*);
 static int combatti(Giocatore*);
 static int scappa(Giocatore*);
 static int gioca_potere_speciale(Giocatore*);
+static void cancella_giocatore(Giocatore*);
+static int numero_zona(Giocatore*);
 
 bool passa_turno;
 char* nome_stanza;
@@ -32,8 +34,6 @@ static unsigned int controllo_mappa = 0;
 static struct Zona_segrete* pFirst = NULL;
 static struct Zona_segrete* pLast = NULL;
 unsigned int numero_zone;
-
-
 
 void imposta_gioco(void){
     //Quanti giocatori partecipano alla partita?
@@ -568,7 +568,7 @@ void imposta_gioco(void){
  }
 
 void avanza(Giocatore* giocatore_in_turno){
-    int avanzare = 0;   //variabile controllo per verificare se il giocatore può effettivamente avanzare
+    int avanzare;   //variabile controllo per verificare se il giocatore può effettivamente avanzare
     time_t t;
     srand((unsigned) time(&t));
     int possibilità_abitante = rand() % 3 + 1;      //genera numeri da 1 a 3
@@ -631,12 +631,14 @@ void avanza(Giocatore* giocatore_in_turno){
     if(avanzare == 1){
          if(giocatore_in_turno -> posizione -> zona_successiva != NULL && giocatore_in_turno -> posizione -> zona_successiva != pLast){
             giocatore_in_turno -> posizione = giocatore_in_turno -> posizione -> zona_successiva;
-            printf("\n%s è avanzato nella zona successiva!\n", giocatore_in_turno -> nome_giocatore);
+            if(numero_giocatori != 0){
+                printf("\n%s è avanzato nella zona successiva!\n", giocatore_in_turno -> nome_giocatore);
+            }
             giocatore_in_turno -> posizione -> tesoro_preso = 0;    //se il giocatore decide di tornare in una zona in cui già era passato ha sempre la stessa possibilità di raccogliere un tesoro diverso o uguale spawnato
         }
         else if(giocatore_in_turno -> posizione -> zona_successiva == pLast){
             printf("\n%s è arrivato nella zona finale!",  giocatore_in_turno -> nome_giocatore);
-            printf(" Hai vinto la partita!\n");
+            printf("\nHai vinto la partita!\n");
             numero_giocatori = 0;
         }
     }
@@ -723,16 +725,9 @@ void stampa_giocatore(Giocatore* giocatore_in_turno){
         puts("ERRORE: nessuna classe identificata.");
     }
 
-    if(giocatore_in_turno -> posizione != pFirst){
-        Zona_segrete* scanner = giocatore_in_turno -> posizione -> zona_precedente -> zona_successiva;
-        char* zona_giocatore = nomi_stanze(scanner);
-        printf("Posizione attuale del giocatore: %s\n", zona_giocatore);
-    }
-    else if(giocatore_in_turno -> posizione == pFirst){
-        Zona_segrete* scanner = giocatore_in_turno -> posizione -> zona_successiva -> zona_precedente;
-        char* zona_giocatore = nomi_stanze(scanner);
-        printf("Posizione attuale del giocatore: %s\n", zona_giocatore);
-    }
+    Zona_segrete* scanner = giocatore_in_turno -> posizione;
+    char* zona_giocatore = nomi_stanze(scanner);
+    printf("Posizione attuale del giocatore: %s\n", zona_giocatore);
 
     printf("Punti vita del giocatore: %d\n", giocatore_in_turno -> p_vita);
     printf("Dadi di attacco: %d\n", giocatore_in_turno -> dadi_attacco);
@@ -742,21 +737,16 @@ void stampa_giocatore(Giocatore* giocatore_in_turno){
 }
 
 void stampa_zona(Giocatore* giocatore_in_turno){
-    if(giocatore_in_turno -> posizione != pFirst){
-        Zona_segrete* scanner = giocatore_in_turno -> posizione -> zona_precedente -> zona_successiva;
-        char* zona_giocatore_attuale = nomi_stanze(scanner);
-        printf("\nValori della zona in cui si trova il giocatore: %s", giocatore_in_turno -> nome_giocatore);
-        printf("Zona attuale: %s\n", zona_giocatore_attuale);
-    }
-    else if(giocatore_in_turno -> posizione == pFirst){
-        Zona_segrete* scanner = giocatore_in_turno -> posizione -> zona_successiva -> zona_precedente;
-        char* zona_giocatore_attuale = nomi_stanze(scanner);
-        printf("\nValori della zona in cui si trova il giocatore: %s", giocatore_in_turno -> nome_giocatore);
-        printf("Zona attuale: %s\n", zona_giocatore_attuale);
-    }
+    Zona_segrete* scanner = giocatore_in_turno -> posizione;
+    char* zona_giocatore_attuale = nomi_stanze(scanner);
+    printf("\nValori della zona in cui si trova il giocatore: %s", giocatore_in_turno -> nome_giocatore);
+    printf("Zona attuale: %s\n", zona_giocatore_attuale);
+
+    int numero_zona_attuale = numero_zona(giocatore_in_turno);
+    printf("Numero zona attuale: %d\n", numero_zona_attuale);
 
     if((giocatore_in_turno -> posizione -> tesoro) == 1 || (giocatore_in_turno -> posizione -> tesoro) == 2 || (giocatore_in_turno -> posizione -> tesoro) == 3){
-        puts("C'è un tesoro presente in questa zona!");
+        puts("C'è un tesoro presente in questa zona!\n");
     }
     else if((giocatore_in_turno -> posizione -> tesoro) == 0){
         puts("Nessuno tesoro presente in questa zona!");
@@ -798,8 +788,7 @@ void stampa_zona(Giocatore* giocatore_in_turno){
                         giocatore_in_turno -> p_vita = giocatore_in_turno -> p_vita - 1;
                             if(giocatore_in_turno -> p_vita == 0 || giocatore_in_turno -> p_vita >= 200){
                                 printf("Il giocatore %s è stato ucciso!\n", giocatore_in_turno -> nome_giocatore);
-                                free(giocatore_in_turno);
-                                numero_giocatori--;
+                                cancella_giocatore(giocatore_in_turno);
                                 return 0;
                             }
                     }
@@ -830,8 +819,7 @@ void stampa_zona(Giocatore* giocatore_in_turno){
             giocatore_in_turno -> posizione -> tesoro_preso = 1;
                 if(giocatore_in_turno -> p_vita == 0 || giocatore_in_turno -> p_vita >= 200){
                     printf("Il giocatore %s è stato ucciso dal veleno!\n", giocatore_in_turno -> nome_giocatore);
-                    free(giocatore_in_turno);
-                    numero_giocatori--;
+                    cancella_giocatore(giocatore_in_turno);
                 }
         }
         else if(giocatore_in_turno -> posizione -> tesoro == 2){
@@ -1009,9 +997,8 @@ void stampa_zona(Giocatore* giocatore_in_turno){
         }
         else if(giocatore_in_turno -> p_vita <= 0 || giocatore_in_turno -> p_vita >= 200){
             printf("%s è stato sconfitto dall'abitante!\n\n", giocatore_in_turno -> nome_giocatore);
-            free(giocatore_in_turno);
             free(nuovo_abitante);
-            numero_giocatori--;
+            cancella_giocatore(giocatore_in_turno);
             return 0;
         }
 
@@ -1203,9 +1190,8 @@ void stampa_zona(Giocatore* giocatore_in_turno){
                     }
                     if(giocatore_in_turno -> p_vita <= 0 || giocatore_in_turno -> p_vita >= 200){
                         printf("\n%s è stato sconfitto dall'abitante!\n", giocatore_in_turno -> nome_giocatore);
-                        free(giocatore_in_turno);
                         free(nuovo_abitante);
-                        numero_giocatori--;
+                        cancella_giocatore(giocatore_in_turno);
                         return 0;
                     }
             }
@@ -1218,6 +1204,7 @@ int gioca_potere_speciale(Giocatore* giocatore_in_turno){
     if(giocatore_in_turno -> potere_speciale >= 1){
         puts("\nHai ucciso l'abitante delle segrete! Puoi procedere!\n");
         giocatore_in_turno -> potere_speciale = giocatore_in_turno -> potere_speciale - 1;
+        return 1;
     }
     else{
         puts("\nNon hai poteri speciali sufficienti per poter usare quest'opzione!\n");
@@ -1225,6 +1212,42 @@ int gioca_potere_speciale(Giocatore* giocatore_in_turno){
     }
 
     return 0;
+
+}
+
+void cancella_giocatore(Giocatore* giocatore_in_turno){
+    //Cerca l'indice del giocatore da cancellare nell'array
+    int indice = -1;
+    for(int i = 0; i < numero_giocatori; i++){
+        if(giocatori[i] == giocatore_in_turno){
+            indice = i;
+            break;
+        }
+    }
+
+    if(indice == -1){
+        puts("Giocatore non trovato! Errore!");
+    }
+
+    //Liberare la memoria del giocatore eliiminato
+    free(giocatore_in_turno);
+    numero_giocatori--;
+
+    //Sposta gli elementi successivi per riempire il buco
+    for(int i = indice; i < numero_giocatori; i++){
+        giocatori[i] = giocatori[i + 1];
+    }
+}
+
+int numero_zona(Giocatore* giocatore_in_turno){
+    int contatore = 1;
+    Zona_segrete* zona_scan = pFirst;
+    while(zona_scan != (giocatore_in_turno -> posizione)){
+        contatore++;
+        zona_scan = zona_scan -> zona_successiva;
+    }
+
+    return  contatore;
 
 }
 
